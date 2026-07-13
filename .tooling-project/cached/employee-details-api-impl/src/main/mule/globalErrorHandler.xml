@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd">
+
+    <error-handler name="employee-api-global-error-handler">
+
+        <!-- ===== APIKIT Error Handlers ===== -->
+
+        <on-error-propagate
+            type="APIKIT:BAD_REQUEST"
+            doc:name="400 APIKit Bad Request"
+            doc:description="Handles malformed or invalid request payloads and parameters from APIKit validation">
+            <set-payload
+                mimeType="application/json"
+                value="#[output application/json --- {code: 400, message: 'Bad Request', description: (error.description default 'The request body is missing required fields or contains invalid values.'), timestamp: now() as String}]"
+                doc:name="Build 400 Response"
+                doc:description="Returns a standard 400 JSON error response for bad APIKit requests" />
+            <set-variable variableName="httpStatus" value="#[400]" doc:name="Set HTTP Status 400" />
+        </on-error-propagate>
+
+        <on-error-propagate
+            type="APIKIT:NOT_FOUND"
+            doc:name="404 APIKit Not Found"
+            doc:description="Handles requests to API resources or employee records that do not exist">
+            <set-payload
+                mimeType="application/json"
+                value="#[output application/json --- {code: 404, message: 'Not Found', description: (error.description default 'The requested resource or employee record does not exist.'), timestamp: now() as String}]"
+                doc:name="Build 404 Response"
+                doc:description="Returns a standard 404 JSON error response for resource not found" />
+            <set-variable variableName="httpStatus" value="#[404]" doc:name="Set HTTP Status 404" />
+        </on-error-propagate>
+
+        <on-error-propagate
+            type="APIKIT:METHOD_NOT_ALLOWED"
+            doc:name="405 Method Not Allowed"
+            doc:description="Handles HTTP methods not supported by the Employee Details API specification">
+            <set-payload
+                mimeType="application/json"
+                value="#[output application/json --- {code: 405, message: 'Method Not Allowed', description: (error.description default 'The HTTP method used is not allowed for this resource.'), timestamp: now() as String}]"
+                doc:name="Build 405 Response"
+                doc:description="Returns a standard 405 JSON error response for unsupported HTTP methods" />
+            <set-variable variableName="httpStatus" value="#[405]" doc:name="Set HTTP Status 405" />
+        </on-error-propagate>
+
+        <on-error-propagate
+            type="APIKIT:NOT_ACCEPTABLE"
+            doc:name="406 Not Acceptable"
+            doc:description="Handles requests where the requested media type cannot be served by the API">
+            <set-payload
+                mimeType="application/json"
+                value="#[output application/json --- {code: 406, message: 'Not Acceptable', description: (error.description default 'The requested media type is not supported by this API.'), timestamp: now() as String}]"
+                doc:name="Build 406 Response"
+                doc:description="Returns a standard 406 JSON error response for unacceptable media types" />
+            <set-variable variableName="httpStatus" value="#[406]" doc:name="Set HTTP Status 406" />
+        </on-error-propagate>
+
+        <on-error-propagate
+            type="APIKIT:UNSUPPORTED_MEDIA_TYPE"
+            doc:name="415 Unsupported Media Type"
+            doc:description="Handles requests with a Content-Type not supported by the Employee Details API">
+            <set-payload
+                mimeType="application/json"
+                value="#[output application/json --- {code: 415, message: 'Unsupported Media Type', description: (error.description default 'The request Content-Type is not supported. Use application/json.'), timestamp: now() as String}]"
+                doc:name="Build 415 Response"
+                doc:description="Returns a standard 415 JSON error response for unsupported content types" />
+            <set-variable variableName="httpStatus" value="#[415]" doc:name="Set HTTP Status 415" />
+        </on-error-propagate>
+
+        <!-- ===== HTTP Connector Error Handlers ===== -->
+
+        <on-error-propagate
+            type="HTTP:BAD_REQUEST"
+            doc:name="400 HTTP Bad Request"
+            doc:description="Handles 400 Bad Request errors from outbound HTTP calls">
+            <set-payload
+                mimeType="application/json"
+                value="#[output application/json --- {code: 400, message: 'Bad Request', description: (error.description default 'The HTTP request was malformed or contained invalid parameters.'), timestamp: now() as String}]"
+                doc:name="Build 400 HTTP Response"
+                doc:description="Returns a standard 400 JSON error response for HTTP bad request errors" />
+            <set-variable variableName="httpStatus" value="#[400]" doc:name="Set HTTP Status 400" />
+        </on-error-propagate>
+
+        <on-error-propagate
+            type="HTTP:UNAUTHORIZED"
+            doc:name="401 HTTP Unauthorized"
+            doc:description="Handles 401 Unauthorized errors from outbound HTTP calls">
+            <set-payload
+                mimeType="application/json"
+                value="#[output application/json --- {code: 401, message: 'Unauthorized', description: (error.description default 'Authentication is required to access this resource.'), timestamp: now() as String}]"
+                doc:name="Build 401 Response"
+                doc:description="Returns a standard 401 JSON error response for unauthorized HTTP requests" />
+            <set-variable variableName="httpStatus" value="#[401]" doc:name="Set HTTP Status 401" />
+        </on-error-propagate>
+
+        <on-error-propagate
+            type="HTTP:FORBIDDEN"
+            doc:name="403 HTTP Forbidden"
+            doc:description="Handles 403 Forbidden errors from outbound HTTP calls">
+            <set-payload
+                mimeType="application/json"
+                value="#[output application/json --- {code: 403, message: 'Forbidden', description: (error.description default 'You do not have permission to access this resource.'), timestamp: now() as String}]"
+                doc:name="Build 403 Response"
+                doc:description="Returns a standard 403 JSON error response for forbidden HTTP requests" />
+            <set-variable variableName="httpStatus" value="#[403]" doc:name="Set HTTP Status 403" />
+        </on-error-propagate>
+
+        <on-error-propagate
+            type="HTTP:NOT_FOUND"
+            doc:name="404 HTTP Not Found"
+            doc:description="Handles 404 Not Found errors from outbound HTTP calls">
+            <set-payload
+                mimeType="application/json"
+                value="#[output application/json --- {code: 404, message: 'Not Found', description: (error.description default 'The requested HTTP resource was not found.'), timestamp: now() as String}]"
+                doc:name="Build 404 HTTP Response"
+                doc:description="Returns a standard 404 JSON error response for HTTP not found errors" />
+            <set-variable variableName="httpStatus" value="#[404]" doc:name="Set HTTP Status 404" />
+        </on-error-propagate>
+
+        <on-error-propagate
+            type="HTTP:TIMEOUT"
+            doc:name="408 HTTP Timeout"
+            doc:description="Handles request timeout errors from outbound HTTP calls">
+            <set-payload
+                mimeType="application/json"
+                value="#[output application/json --- {code: 408, message: 'Request Timeout', description: (error.description default 'The HTTP request timed out. Please try again later.'), timestamp: now() as String}]"
+                doc:name="Build 408 Response"
+                doc:description="Returns a standard 408 JSON error response for HTTP timeout errors" />
+            <set-variable variableName="httpStatus" value="#[408]" doc:name="Set HTTP Status 408" />
+        </on-error-propagate>
+
+        <on-error-propagate
+            type="HTTP:CONNECTIVITY"
+            doc:name="503 HTTP Connectivity"
+            doc:description="Handles HTTP connectivity failures when the downstream service is unreachable">
+            <set-payload
+                mimeType="application/json"
+                value="#[output application/json --- {code: 503, message: 'Service Unavailable', description: (error.description default 'Unable to connect to the downstream HTTP service. Please try again later.'), timestamp: now() as String}]"
+                doc:name="Build 503 HTTP Connectivity Response"
+                doc:description="Returns a standard 503 JSON error response for HTTP connectivity failures" />
+            <set-variable variableName="httpStatus" value="#[503]" doc:name="Set HTTP Status 503" />
+        </on-error-propagate>
+
+        <!-- ===== FTP Connector Error Handlers ===== -->
+
+        <on-error-propagate
+            type="FTP:FILE_DOESNT_EXIST"
+            doc:name="404 FTP File Not Found"
+            doc:description="Handles the case where the employees.json data file does not exist on the FTP server">
+            <set-payload
+                mimeType="application/json"
+                value="#[output application/json --- {code: 404, message: 'Not Found', description: (error.description default 'The employee data file does not exist on the FTP server.'), timestamp: now() as String}]"
+                doc:name="Build 404 FTP Response"
+                doc:description="Returns a 404 JSON error response when the employee data file is missing on the FTP server" />
+            <set-variable variableName="httpStatus" value="#[404]" doc:name="Set HTTP Status 404" />
+        </on-error-propagate>
+
+        <on-error-propagate
+            type="FTP:ILLEGAL_PATH"
+            doc:name="400 FTP Illegal Path"
+            doc:description="Handles invalid or illegal FTP path errors when reading or writing employee data">
+            <set-payload
+                mimeType="application/json"
+                value="#[output application/json --- {code: 400, message: 'Bad Request', description: (error.description default 'The FTP file path is invalid or illegal.'), timestamp: now() as String}]"
+                doc:name="Build 400 FTP Path Response"
+                doc:description="Returns a 400 JSON error response for invalid FTP file paths" />
+            <set-variable variableName="httpStatus" value="#[400]" doc:name="Set HTTP Status 400" />
+        </on-error-propagate>
+
+        <on-error-propagate
+            type="FTP:CONNECTIVITY"
+            doc:name="503 FTP Connectivity"
+            doc:description="Handles FTP server connection failures when the FTP server is unreachable">
+            <set-payload
+                mimeType="application/json"
+                value="#[output application/json --- {code: 503, message: 'Service Unavailable', description: (error.description default 'Unable to connect to the FTP server. Please verify FTP configuration and try again.'), timestamp: now() as String}]"
+                doc:name="Build 503 FTP Connectivity Response"
+                doc:description="Returns a 503 JSON error response when the FTP server cannot be reached" />
+            <set-variable variableName="httpStatus" value="#[503]" doc:name="Set HTTP Status 503" />
+        </on-error-propagate>
+
+        <on-error-propagate
+            type="FTP:RETRY_EXHAUSTED"
+            doc:name="503 FTP Retry Exhausted"
+            doc:description="Handles the case where all FTP retry attempts have been exhausted">
+            <set-payload
+                mimeType="application/json"
+                value="#[output application/json --- {code: 503, message: 'Service Unavailable', description: (error.description default 'FTP operation failed after exhausting all retry attempts.'), timestamp: now() as String}]"
+                doc:name="Build 503 FTP Retry Response"
+                doc:description="Returns a 503 JSON error response when FTP retry attempts are exhausted" />
+            <set-variable variableName="httpStatus" value="#[503]" doc:name="Set HTTP Status 503" />
+        </on-error-propagate>
+
+        <!-- ===== Application Custom Error Handlers ===== -->
+
+        <on-error-propagate
+            type="APP:NOT_FOUND"
+            doc:name="404 App Not Found"
+            doc:description="Handles APP:NOT_FOUND raised when a requested employee record does not exist in the data source">
+            <set-payload
+                mimeType="application/json"
+                value="#[output application/json --- {code: 404, message: 'Not Found', description: (error.description default 'Data not found'), timestamp: now() as String}]"
+                doc:name="Build 404 App Response"
+                doc:description="Returns a 404 JSON error response when the requested employee data is not found" />
+            <set-variable variableName="httpStatus" value="#[404]" doc:name="Set HTTP Status 404" />
+        </on-error-propagate>
+
+        <on-error-propagate
+            type="APP:CONFLICT"
+            doc:name="409 App Conflict"
+            doc:description="Handles APP:CONFLICT raised when a POST request attempts to create an employee that already exists">
+            <set-payload
+                mimeType="application/json"
+                value="#[output application/json --- {code: 409, message: 'Conflict', description: (error.description default 'Record already exists'), timestamp: now() as String}]"
+                doc:name="Build 409 App Response"
+                doc:description="Returns a 409 JSON error response when a duplicate employee record is detected" />
+            <set-variable variableName="httpStatus" value="#[409]" doc:name="Set HTTP Status 409" />
+        </on-error-propagate>
+
+        <!-- ===== Catch-All: 500 Internal Server Error ===== -->
+
+        <on-error-propagate
+            type="ANY"
+            doc:name="500 Internal Server Error"
+            doc:description="Catch-all handler for unexpected errors not covered by specific error type handlers">
+            <set-payload
+                mimeType="application/json"
+                value="#[output application/json --- {code: 500, message: 'Internal Server Error', description: (error.description default 'An unexpected error occurred. Please try again later or contact support.'), timestamp: now() as String}]"
+                doc:name="Build 500 Response"
+                doc:description="Returns a standard 500 JSON error response for any unexpected unhandled error" />
+            <set-variable variableName="httpStatus" value="#[500]" doc:name="Set HTTP Status 500" />
+        </on-error-propagate>
+
+    </error-handler>
+
+</mule>

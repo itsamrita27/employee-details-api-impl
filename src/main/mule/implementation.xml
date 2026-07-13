@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+      xmlns:ftp="http://www.mulesoft.org/schema/mule/ftp"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/ftp http://www.mulesoft.org/schema/mule/ftp/current/mule-ftp.xsd
+        http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+
+    <!-- ==================== GET /employees ==================== -->
+    <flow name="get:\employees:employee-details-api-config"
+          doc:name="Get Employees Flow"
+          doc:description="Retrieves all employees from the FTP data file. If the optional id query parameter is provided, returns the matching employee or 404 if not found.">
+
+        <logger
+            level="INFO"
+            message="#['GET /employees - id=' ++ (attributes.queryParams.id default 'all')]"
+            doc:name="Log GET Request"
+            doc:description="Logs the incoming GET /employees request with optional id filter" />
+
+        <set-variable
+            variableName="employeeId"
+            value="#[attributes.queryParams.id]"
+            doc:name="Store Employee ID Filter"
+            doc:description="Captures the optional id query parameter for use after FTP read" />
+
+        <ftp:read
+            config-ref="employee-api-ftp-config"
+            path="${ftp.dataFile}"
+            outputMimeType="application/json"
+            doc:name="FTP Read Employees File"
+            doc:description="Reads the employees.json data file from the FTP server working directory" />
+
+        <ee:transform
+            doc:name="Filter Employees by ID"
+            doc:description="Returns a single employee when id filter is provided, or the full array when no filter is given. Defaults to empty array when FTP file is empty.">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var employees = if (payload is Array) payload else []
+---
+if (vars.employeeId != null)
+    (employees filter ($.id == vars.employeeId as Number))[0]
+else
+    employees]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+
+        <!-- Fix 2: Return 404 when id filter is provided but no matching employee found -->
+        <choice
+            doc:name="Validate Employee Found"
+            doc:description="Raises APP:NOT_FOUND when a specific id was requested but no matching record exists">
+            <when expression="#[vars.employeeId != null and payload == null]">
+                <raise-error
+                    type="APP:NOT_FOUND"
+                    description="Data not found"
+                    doc:name="Raise 404 Not Found"
+                    doc:description="Throws APP:NOT_FOUND when the requested employee id does not exist in the data source" />
+            </when>
+        </choice>
+
+        <logger
+            level="INFO"
+            message="#['GET /employees - Response ready. Count: ' ++ (if (payload is Array) sizeOf(payload) as String else '1')]"
+            doc:name="Log GET Response"
+            doc:description="Logs the number of employees returned in the GET response" />
+
+    <error-handler doc:name="Error-handler" ref="employee-api-global-error-handler"></error-handler></flow>
+
+    <!-- ==================== POST /employees ==================== -->
+    <flow name="post:\employees:application\json:employee-details-api-config"
+          doc:name="Create Employee Flow"
+          doc:description="Creates a new employee record. Validates no duplicate exists, appends to FTP file, and returns 201 Created confirmation.">
+
+        <set-variable
+            variableName="newEmployee"
+            value="#[payload]"
+            doc:name="Store New Employee Request"
+            doc:description="Saves the incoming POST request payload (new employee data) to a flow variable for later use" />
+
+        <logger
+            level="INFO"
+            message="#['POST /employees - Creating employee id=' ++ (vars.newEmployee.id as String default 'unknown')]"
+            doc:name="Log POST Request"
+            doc:description="Logs the incoming POST /employees request with the employee ID to be created" />
+
+        <ftp:read
+            config-ref="employee-api-ftp-config"
+            path="${ftp.dataFile}"
+            outputMimeType="application/json"
+            doc:name="FTP Read Existing Employees"
+            doc:description="Reads the current list of employees from the FTP data file to check for duplicates before inserting" />
+
+        <!-- Fix 1: Prevent duplicate entries — check if id already exists before inserting -->
+        <choice
+            doc:name="Check for Duplicate Employee"
+            doc:description="Raises APP:CONFLICT (409) if an employee with the same ID already exists in the data source">
+            <when expression="#[(payload is Array) and ((payload filter ($.id == vars.newEmployee.id))[0] != null)]">
+                <raise-error
+                    type="APP:CONFLICT"
+                    description="Record already exists"
+                    doc:name="Raise 409 Conflict"
+                    doc:description="Throws APP:CONFLICT when an employee with the same id is found in the existing data" />
+            </when>
+        </choice>
+
+        <ee:transform
+            doc:name="Append New Employee to List"
+            doc:description="Appends the new employee record to the existing employees array. Handles empty or null FTP response by defaulting to an empty array.">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var existingEmployees = if (payload is Array) payload else []
+---
+existingEmployees ++ [{
+    id: vars.newEmployee.id,
+    name: vars.newEmployee.name,
+    salary: vars.newEmployee.salary,
+    location: vars.newEmployee.location
+}]]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+
+        <ftp:write
+            config-ref="employee-api-ftp-config"
+            path="${ftp.dataFile}"
+            mode="OVERWRITE"
+            doc:name="FTP Write Updated Employees"
+            doc:description="Writes the updated employee list (with the new record appended) back to the FTP data file" />
+
+        <set-payload
+            value="#[%dw 2.0 output application/json --- {id: vars.newEmployee.id, name: vars.newEmployee.name, status: 'Created'}]"
+            doc:name="Set Create Response Payload"
+            doc:description="Sets the 201 Created response payload with the new employee's id, name, and status=Created" />
+
+        <logger
+            level="INFO"
+            message="#['POST /employees - Employee created successfully. id=' ++ (vars.newEmployee.id as String default 'unknown')]"
+            doc:name="Log POST Success"
+            doc:description="Logs successful creation of the new employee record" />
+
+    <error-handler doc:name="Error-handler" ref="employee-api-global-error-handler"></error-handler></flow>
+
+    <!-- ==================== PUT /employees ==================== -->
+    <flow name="put:\employees:application\json:employee-details-api-config"
+          doc:name="Update Employee Flow"
+          doc:description="Updates an existing employee record by ID. Merges only the provided fields in-place — no duplicate keys. Returns 204 No Content on success.">
+
+        <set-variable
+            variableName="updateRequest"
+            value="#[payload]"
+            doc:name="Store Update Request"
+            doc:description="Saves the incoming PUT request payload (fields to update) to a flow variable for use after FTP read" />
+
+        <logger
+            level="INFO"
+            message="#['PUT /employees - Updating employee id=' ++ (vars.updateRequest.id as String default 'unknown')]"
+            doc:name="Log PUT Request"
+            doc:description="Logs the incoming PUT /employees request with the employee ID to be updated" />
+
+        <ftp:read
+            config-ref="employee-api-ftp-config"
+            path="${ftp.dataFile}"
+            outputMimeType="application/json"
+            doc:name="FTP Read Employees for Update"
+            doc:description="Reads the current employee list from FTP to find and update the target employee record" />
+
+        <!-- Fix 3: Explicit field-level merge to prevent duplicate keys -->
+        <ee:transform
+            doc:name="Update Matching Employee Record"
+            doc:description="Finds the employee by id and overwrites only the provided fields (name, salary, location) — each field appears exactly once in the result.">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var employeeList = if (payload is Array) payload else []
+---
+employeeList map (employee) ->
+    if (employee.id == vars.updateRequest.id)
+        {
+            id: employee.id,
+            name: vars.updateRequest.name default employee.name,
+            salary: vars.updateRequest.salary default employee.salary,
+            location: vars.updateRequest.location default employee.location
+        }
+    else
+        employee]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+
+        <ftp:write
+            config-ref="employee-api-ftp-config"
+            path="${ftp.dataFile}"
+            mode="OVERWRITE"
+            doc:name="FTP Write Updated Employees"
+            doc:description="Writes the employee list with the updated record back to the FTP data file" />
+
+        <set-variable
+            variableName="httpStatus"
+            value="204"
+            doc:name="Set HTTP Status 204"
+            doc:description="Sets the HTTP response status to 204 No Content as per the API specification for a successful update" />
+
+        <set-payload
+            value="#[null]"
+            doc:name="Set Empty Response Body"
+            doc:description="Clears the response payload to comply with HTTP 204 No Content — no response body is returned" />
+
+        <logger
+            level="INFO"
+            message="#['PUT /employees - Employee updated successfully. id=' ++ (vars.updateRequest.id as String default 'unknown')]"
+            doc:name="Log PUT Success"
+            doc:description="Logs successful update of the employee record" />
+
+    <error-handler doc:name="Error-handler" ref="employee-api-global-error-handler"></error-handler></flow>
+
+    <!-- ==================== DELETE /employees ==================== -->
+    <flow name="delete:\employees:employee-details-api-config"
+          doc:name="Delete Employee Flow"
+          doc:description="Deletes an employee record by the required id query parameter. Reads the FTP file, validates the employee exists, removes the matching record, writes the updated list back, and returns 204 No Content.">
+
+        <logger
+            level="INFO"
+            message="#['DELETE /employees - id=' ++ (attributes.queryParams.id default 'unknown')]"
+            doc:name="Log DELETE Request"
+            doc:description="Logs the incoming DELETE /employees request with the employee ID to be deleted" />
+
+        <set-variable
+            variableName="employeeId"
+            value="#[attributes.queryParams.id]"
+            doc:name="Store Employee ID"
+            doc:description="Captures the required id query parameter identifying the employee to delete" />
+
+        <ftp:read
+            config-ref="employee-api-ftp-config"
+            path="${ftp.dataFile}"
+            outputMimeType="application/json"
+            doc:name="FTP Read Employees File"
+            doc:description="Reads the employees.json data file from the FTP server to locate and remove the target employee" />
+
+        <choice
+            doc:name="Validate Employee Exists"
+            doc:description="Raises APP:NOT_FOUND when no employee with the given id exists in the data source">
+            <when expression="#[not ((payload is Array) and ((payload filter ($.id == vars.employeeId as Number))[0] != null))]">
+                <raise-error
+                    type="APP:NOT_FOUND"
+                    description="Employee not found"
+                    doc:name="Raise 404 Not Found"
+                    doc:description="Throws APP:NOT_FOUND when no employee matching the provided id is found in the FTP data file" />
+            </when>
+        </choice>
+
+        <ee:transform
+            doc:name="Remove Employee from List"
+            doc:description="Filters out the employee with the matching id from the array, producing the updated list without that record.">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var employeeList = if (payload is Array) payload else []
+---
+employeeList filter ($.id != vars.employeeId as Number)]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+
+        <ftp:write
+            config-ref="employee-api-ftp-config"
+            path="${ftp.dataFile}"
+            mode="OVERWRITE"
+            doc:name="FTP Write Updated Employees"
+            doc:description="Writes the employee list with the deleted record removed back to the FTP data file" />
+
+        <set-variable
+            variableName="httpStatus"
+            value="204"
+            doc:name="Set HTTP Status 204"
+            doc:description="Sets the HTTP response status to 204 No Content as per the API specification for a successful delete" />
+
+        <set-payload
+            value="#[null]"
+            doc:name="Set Empty Response Body"
+            doc:description="Clears the response payload to comply with HTTP 204 No Content — no response body is returned" />
+
+        <logger
+            level="INFO"
+            message="#['DELETE /employees - Employee deleted successfully. id=' ++ (vars.employeeId default 'unknown')]"
+            doc:name="Log DELETE Success"
+            doc:description="Logs successful deletion of the employee record" />
+
+    <error-handler doc:name="Error-handler" ref="employee-api-global-error-handler"></error-handler></flow>
+
+</mule>

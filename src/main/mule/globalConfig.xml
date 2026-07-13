@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:ftp="http://www.mulesoft.org/schema/mule/ftp"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+        http://www.mulesoft.org/schema/mule/ftp http://www.mulesoft.org/schema/mule/ftp/current/mule-ftp.xsd
+        http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd">
+
+    <!-- ==================== FTP Config ==================== -->
+    <ftp:config
+        name="employee-api-ftp-config"
+        doc:name="FTP Config"
+        doc:description="FTP connection configuration for reading and writing employee data files">
+        <ftp:connection
+            host="${ftp.host}"
+            port="${ftp.port}"
+            username="${ftp.username}"
+            password="${ftp.password}"
+            workingDir="${ftp.workingDir}" />
+    </ftp:config>
+
+    <!-- ==================== Default Error Handler ==================== -->
+    <configuration
+        defaultErrorHandler-ref="employee-api-global-error-handler"
+        doc:name="Default Error Handler Configuration"
+        doc:description="Sets employee-api-global-error-handler as the default error handler for all flows in the application" />
+
+    <!-- ==================== Properties ==================== -->
+    <configuration-properties
+        file="config.yaml"
+        doc:name="Configuration Properties"
+        doc:description="Loads application properties for HTTP listener and FTP connector from config.yaml" />
+
+    <!-- ==================== HTTP Listener Config ==================== -->
+    <http:listener-config
+        name="employee-api-http-listener-config"
+        doc:name="HTTP Listener Config"
+        doc:description="HTTP listener configuration binding to ${http.host}:${http.port} for the Employee Details API">
+        <http:listener-connection
+            host="${http.host}"
+            port="${http.port}" />
+    </http:listener-config>
+
+    <!-- ==================== APIKit Router Config ==================== -->
+    <apikit:config
+        name="employee-details-api-config"
+        api="resource::ff280dfa-308f-41a2-a85c-60ed5498fe4e:employee-details-api:1.0.1:raml:zip:employee-details-api.raml"
+        httpStatusVarName="httpStatus"
+        outboundHeadersMapName="outboundHeaders"
+        doc:name="APIKit Config"
+        doc:description="APIKit router configuration bound to the Employee Details API RAML specification v1.0.1" />
+
+</mule>
