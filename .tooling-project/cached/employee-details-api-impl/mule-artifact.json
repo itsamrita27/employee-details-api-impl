@@ -1,0 +1,7 @@
+{
+    "name": "employee-details-api-impl",
+    "minMuleVersion": "4.11.0",
+    "javaSpecificationVersions": [
+      "17"
+    ]
+}
