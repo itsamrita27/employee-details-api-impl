@@ -1,0 +1,6 @@
+{
+  "code": 400,
+  "message": "Bad Request",
+  "description": "The request body is missing required fields or contains invalid values.",
+  "timestamp": "2026-06-24T10:30:00Z"
+}

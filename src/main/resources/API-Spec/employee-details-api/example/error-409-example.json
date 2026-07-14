@@ -1,0 +1,6 @@
+{
+  "code": 409,
+  "message": "Conflict",
+  "description": "An employee with the provided ID already exists. Please use a unique ID.",
+  "timestamp": "2026-06-24T10:30:00Z"
+}

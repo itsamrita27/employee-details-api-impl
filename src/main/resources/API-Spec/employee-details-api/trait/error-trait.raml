@@ -1,0 +1,30 @@
+#%RAML 1.0 Library
+usage: Provides common HTTP error responses for Employee Details API resources.
+
+traits:
+  error-responses:
+    responses:
+      400:
+        description: Bad Request — The request could not be understood or was missing required parameters.
+        body:
+          application/json:
+            type: !include ../datatype/error-response.raml
+            example: !include ../example/error-400-example.json
+      404:
+        description: Not Found — The requested employee resource was not found.
+        body:
+          application/json:
+            type: !include ../datatype/error-response.raml
+            example: !include ../example/error-404-example.json
+      409:
+        description: Conflict — An employee with the given ID already exists.
+        body:
+          application/json:
+            type: !include ../datatype/error-response.raml
+            example: !include ../example/error-409-example.json
+      500:
+        description: Internal Server Error — An unexpected error occurred on the server.
+        body:
+          application/json:
+            type: !include ../datatype/error-response.raml
+            example: !include ../example/error-500-example.json

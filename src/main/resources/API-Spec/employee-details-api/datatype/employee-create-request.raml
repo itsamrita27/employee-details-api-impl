@@ -1,0 +1,35 @@
+#%RAML 1.0 DataType
+displayName: Employee Create Request
+description: Request payload for POST /employees — contains all required fields to create a new employee.
+
+type: object
+properties:
+  id:
+    displayName: Employee ID
+    description: Unique numeric identifier to assign to the new employee.
+    type: number
+    required: true
+    example: 1001
+  name:
+    displayName: Employee Name
+    description: Full name of the employee.
+    type: string
+    required: true
+    minLength: 1
+    maxLength: 100
+    example: John Doe
+  salary:
+    displayName: Salary
+    description: Monthly salary of the employee in USD.
+    type: number
+    required: true
+    minimum: 0
+    example: 75000
+  location:
+    displayName: Location
+    description: Office location or city where the employee is based.
+    type: string
+    required: true
+    minLength: 1
+    maxLength: 100
+    example: New York

@@ -1,0 +1,6 @@
+{
+  "code": 500,
+  "message": "Internal Server Error",
+  "description": "An unexpected error occurred on the server. Please try again later or contact support.",
+  "timestamp": "2026-06-24T10:30:00Z"
+}

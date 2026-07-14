@@ -1,0 +1,11 @@
+{
+  "ok": false,
+  "errors": [
+  "DX plugin not installed. Install: npm install -g @salesforce/anypoint-cli-dx-mule-plugin"
+],
+  "warnings": [],
+  "mule_version": "4.11.2",
+  "runtime_path": "C:\Users\Administrator\AnypointCodeBuilder\runtime\mule-enterprise-standalone-4.11.2",
+  "java_home": "c:\Users\Administrator\.vscode\extensions\salesforce.mule-dx-dependencies-1.6.2-win32-x64\build\deps\jdk-17.0.13+11",
+  "java_version": "17"
+}

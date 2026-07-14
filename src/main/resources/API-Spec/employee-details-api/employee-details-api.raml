@@ -1,0 +1,116 @@
+#%RAML 1.0
+title: Employee Details API
+description: >
+  API for managing employee records. Supports retrieving, creating, updating,
+  and deleting employee data including name, salary, and location details.
+version: v1
+mediaType: application/json
+protocols:
+  - HTTPS
+
+uses:
+  ErrorLib: trait/error-trait.raml
+
+types:
+  Employee:               !include datatype/employee.raml
+  EmployeeListResponse:   !include datatype/employee-list-response.raml
+  EmployeeCreateRequest:  !include datatype/employee-create-request.raml
+  EmployeeCreateResponse: !include datatype/employee-create-response.raml
+  EmployeeUpdateRequest:  !include datatype/employee-update-request.raml
+  ErrorResponse:          !include datatype/error-response.raml
+
+/employees:
+  displayName: Employees
+  description: Resource for managing employee records.
+
+  get:
+    is:
+      - ErrorLib.error-responses
+    displayName: Get Employees
+    description: >
+      Retrieve a list of all employees. Optionally filter by a specific
+      employee ID using the id query parameter.
+    queryParameters:
+      id:
+        displayName: Employee ID
+        description: Filter results to return the employee matching the specified ID.
+        type: number
+        required: false
+        example: 1001
+    responses:
+      200:
+        description: Successfully retrieved the list of employees. When the optional id query parameter is provided, the response contains the matching employee as a JSON object.
+        body:
+          application/json:
+            displayName: Employee List
+            description: An array of employee records, or a single employee object when filtering by id.
+            type: EmployeeListResponse | Employee
+            examples:
+              all-employees:
+                displayName: All Employees
+                description: Example response when no id filter is applied — returns all employees.
+                value: !include example/employee-list-response-example.json
+              employee-by-id:
+                displayName: Employee by ID
+                description: Example response when id query parameter is provided — returns the matching employee as a JSON object.
+                value: !include example/employee-get-by-id-response-example.json
+
+  post:
+    is:
+      - ErrorLib.error-responses
+    displayName: Create Employee
+    description: >
+      Create a new employee record. The request body must include the employee
+      ID, name, salary, and location.
+    body:
+      application/json:
+        displayName: Employee Create Request
+        description: Payload containing all required fields for creating a new employee.
+        type: EmployeeCreateRequest
+        example: !include example/employee-create-request-example.json
+    responses:
+      201:
+        description: Employee successfully created.
+        body:
+          application/json:
+            displayName: Employee Create Response
+            description: Confirmation of employee creation with ID, name, and status.
+            type: EmployeeCreateResponse
+            example: !include example/employee-create-response-example.json
+
+  put:
+    is:
+      - ErrorLib.error-responses
+    displayName: Update Employee
+    description: >
+      Update an existing employee's details. The request body must include the
+      employee ID and at least one of the updatable fields: name, salary, or location.
+    body:
+      application/json:
+        displayName: Employee Update Request
+        description: >
+          Payload containing the employee ID and one or more fields to update
+          (name, salary, location).
+        type: EmployeeUpdateRequest
+        example: !include example/employee-update-request-example.json
+    responses:
+      204:
+        description: Employee successfully updated. No content is returned in the response body.
+
+  delete:
+    is:
+      - ErrorLib.error-responses
+    displayName: Delete Employee
+    description: >
+      Delete an existing employee record by the specified ID.
+      The id query parameter is required to identify the employee to delete.
+    queryParameters:
+      id:
+        displayName: Employee ID
+        description: The ID of the employee to delete.
+        type: number
+        required: true
+        example: 1001
+    responses:
+      204:
+        description: Employee successfully deleted. No content is returned in the response body.

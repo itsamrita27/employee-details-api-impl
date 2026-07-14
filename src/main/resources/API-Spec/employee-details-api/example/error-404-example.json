@@ -1,0 +1,6 @@
+{
+  "code": 404,
+  "message": "Not Found",
+  "description": "The employee with the specified ID does not exist.",
+  "timestamp": "2026-06-24T10:30:00Z"
+}

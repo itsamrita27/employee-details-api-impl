@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1001,
+    "name": "John Doe",
+    "salary": 75000,
+    "location": "New York"
+  },
+  {
+    "id": 1002,
+    "name": "Jane Smith",
+    "salary": 85000,
+    "location": "San Francisco"
+  },
+  {
+    "id": 1003,
+    "name": "Robert Johnson",
+    "salary": 92000,
+    "location": "Chicago"
+  }
+]

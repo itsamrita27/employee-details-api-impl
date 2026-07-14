@@ -1,0 +1,7 @@
+#%RAML 1.0 DataType
+displayName: Employee List Response
+description: Response payload for GET /employees — returns an array of employee records.
+
+type: array
+items: !include employee.raml
+minItems: 0

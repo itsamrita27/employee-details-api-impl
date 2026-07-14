@@ -1,0 +1,30 @@
+#%RAML 1.0 DataType
+displayName: Error Response
+description: Common error response structure returned for all API error scenarios.
+
+type: object
+properties:
+  code:
+    displayName: Error Code
+    description: HTTP status code of the error.
+    type: integer
+    required: true
+    example: 400
+  message:
+    displayName: Error Message
+    description: A human-readable description of the error.
+    type: string
+    required: true
+    example: Bad Request
+  description:
+    displayName: Error Description
+    description: Detailed description providing additional context about the error.
+    type: string
+    required: false
+    example: The request body is missing required fields.
+  timestamp:
+    displayName: Timestamp
+    description: ISO 8601 date-time when the error occurred.
+    type: datetime
+    required: true
+    example: 2026-06-24T10:30:00Z

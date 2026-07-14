@@ -1,0 +1,12 @@
+{
+  "main": "employee-details-api.raml",
+  "name": "Employee-Details-API",
+  "classifier": "raml",
+  "apiVersion": "v1",
+  "organizationId": "ff280dfa-308f-41a2-a85c-60ed5498fe4e",
+  "descriptorVersion": "1.0.0",
+  "groupId": "ff280dfa-308f-41a2-a85c-60ed5498fe4e",
+  "assetId": "employee-details-api",
+  "version": "1.0.1",
+  "tags": []
+}
